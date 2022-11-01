@@ -1,5 +1,6 @@
 use std::process::Command;
 use std::collections::HashMap;
+use terminal_link::Link;
 
 fn main() {
     let output = Command::new("pacman")
@@ -34,9 +35,11 @@ fn main() {
     for package in results.iter() {
         let package_name: String = String::from(package["Name"].as_str().unwrap());
         let package_version: String = String::from(package["Version"].as_str().unwrap());
+        let aur_link_uri = "https://aur.archlinux.org/packages/".to_string() + &package_name;
+        let aur_link = Link::new(&aur_link_uri, &aur_link_uri);
 
         if package_version != local_packages[&package_name] {
-            println!("{} needs update to AUR version {}; installed version is {}", package_name, package_version, local_packages[&package_name]);
+            println!("{} {} has new version {} available: {}", package_name, local_packages[&package_name], package_version, aur_link);
         }
     }
 }

@@ -3,6 +3,11 @@ use std::collections::HashMap;
 use terminal_link::Link;
 use serde_json::Value;
 
+/// Fetch list of foreign packages in pacman
+/// 
+/// Any package installed manually with pacman, as in not installed using pacman -S,
+/// is considered foreign. We're only interested in the ones installed from AUR, but
+/// that's caught later.
 fn pacman_packages() -> HashMap<String, String> {
     let output = Command::new("pacman")
                 .arg("-Qm")
@@ -25,6 +30,10 @@ fn pacman_packages() -> HashMap<String, String> {
     packages
 }
 
+/// Convert package list to AUR query string
+/// 
+/// The AUR api has a specific format it wants the list of packages to look up in,
+/// so we need to massage the data a bit before we can make the request.
 fn packages_to_query_string(packages: &HashMap<String, String>) -> String {
     let mut uri_args = String::from("");
 
@@ -35,6 +44,12 @@ fn packages_to_query_string(packages: &HashMap<String, String>) -> String {
     uri_args
 }
 
+/// Look for our foreign packages on AUR
+/// 
+/// Any packages we found in pacman earlier that did not come from the official repos
+/// will be checked against the AUR api. Any that exist in AUR will be returned with
+/// their latest version number. Foreign packages that do not exist in AUR will be
+/// quietly ignored.
 fn aur_lookup(uri: String) -> HashMap<String, String> {
     let mut packages = HashMap::new();
     let results;
@@ -57,6 +72,12 @@ fn aur_lookup(uri: String) -> HashMap<String, String> {
     packages
 }
 
+/// Auspex, for reading AUR
+/// 
+/// Simple commandline tool for Arch Linux to list packages installed from AUR
+/// that have updates ready. Useful helper for people who prefer to manually
+/// operate AUR rather than use a frontend, but don't want to have to manually
+/// _check_ AUR for updates.
 fn main() {
     let packages = &pacman_packages();
     let uri = format!("https://aur.archlinux.org/rpc/?v=5&type=info&{}", packages_to_query_string(packages));    
